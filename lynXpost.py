@@ -5,22 +5,16 @@ import vk_api
 import twitter
 import facebook
 import pprint
+import ConfigParser
+
 
 pp = pprint.PrettyPrinter(indent=4)
 
 
 class xpost():
     
-    '''
-    get vk token: https://oauth.vk.com/authorize?client_id=5046122&display=page&redirect_uri=https://oauth.vk.com/blank.html&scope=73728&response_type=token&v=5.37
-    '''
-    def __init__(self):
-        self.vk = vk_api.VkApi(token = '', app_id = 5046122, scope=73728)
-        try:
-            self.vk.authorization()
-        except vk_api.AuthorizationError as error_msg:
-            print(error_msg)
-            return
+    def __init__(self, vkToken):
+        self.vk = vk_api.VkApi(token = vkToken, app_id = 5046122, scope=73728)
 
     def readVk(self, msgCount = 1):
         items = []
@@ -41,7 +35,9 @@ class xpost():
                     items.append(item)
         return items
                 
-
+    def editVk(self, postId, text):
+        return self.vk.method('wall.edit', {'post_id': postId, 'message': text})
+    
     def postTwi(self):
         pass
     
@@ -53,9 +49,15 @@ class xpost():
         
 
 def main():
-    x = xpost()
-    for post in x.readVk(4):
-        print "postID: ", post['id'], "text: ", post['text'] 
+    config = ConfigParser.ConfigParser()
+    config.read('lynXpost.cfg')
+
+    x = xpost(vkToken = config.get('vkontakte', 'token'))
+
+    for post in x.readVk(3):
+        print "postID: ", post['id'], "text: ", post['text']
+        if "#lynXpost" in post['text']:
+            x.editVk(post['id'], post['text'].replace("#lynXpost", "")) 
         if 'attachments' in post:
             print "photos: ",
             for attachment in  post['attachments']:
